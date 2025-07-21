@@ -1,4 +1,4 @@
-import express, { Response, ErrorRequestHandler } from "express";
+import express, { ErrorRequestHandler } from "express";
 import helmet from 'helmet';
 import cors from 'cors';
 import router from './routes';
@@ -17,11 +17,12 @@ app.use(
 
 app.use(helmet());
 app.use(express.json());
-app.use('/', router);
+app.use('/api', router);
 
-const errorHandler: ErrorRequestHandler = (err, _, res: Response ) => {
+const errorHandler: ErrorRequestHandler = (err, req, res, next ) => {
   if (err instanceof ZodError) {
     res.status(400).json({ message: "Validation error", issue: err.format() })
+    return;
   }
 
   if(env.NODE_ENV !== "production") {

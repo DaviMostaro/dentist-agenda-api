@@ -1,4 +1,5 @@
 import express from 'express';
+import { authRouter } from './auth.routes';
 
 const router = express.Router();
 
@@ -9,5 +10,8 @@ router.get('/', (req, res) => {
 router.get('/health', (req, res) => {
   res.json({ message: 'API is healthy' });
 });
+
+router.use(authRouter);
+
 
 export default router;

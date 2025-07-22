@@ -1,7 +1,7 @@
 import express, { ErrorRequestHandler } from "express";
 import helmet from 'helmet';
 import cors from 'cors';
-import router from './routes';
+import router from './routes/index.routes';
 import { env } from './env';
 import { ZodError } from 'zod';
 

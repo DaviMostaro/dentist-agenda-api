@@ -12,7 +12,6 @@ export type UserType = {
 
 export type CreateUserType = {
     name: string;
-    slug: string;
     email: string;
     password: string;
 }

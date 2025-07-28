@@ -1,5 +1,8 @@
+import slug from "slug"
 import { prisma } from "../libs/prisma"
 import { CreateUserType } from "../types/UserType"
+import { hash } from "bcrypt-ts"
+import { createToken } from "../utils/jwt-token"
 
 export const findUserByEmail = async (email: string) => {
     const user = await prisma.user.findUnique({
@@ -27,14 +30,48 @@ export const findUserBySlug = async (slug: string) => {
     return user;
 }
 
-export const createUser = async (data: CreateUserType) => {
-    const user = await prisma.user.create({
-        data
-    })
-
-    if(user) {
-        return user;
+export const createUser = async ({ name, email, password }: CreateUserType) => {
+    const hasEmail = await findUserByEmail(email);
+    if (hasEmail) {
+        return new Error("User already exists");
     }
 
-    return null;
+    let genSlug = true;
+    let userSlug = slug(name, { lower: true });
+    while (genSlug) {
+        const hasSlug = await findUserBySlug(userSlug);
+        if (hasSlug) {
+            let randomSuffix = Math.floor(Math.random() * 1000);
+            userSlug = slug(name + randomSuffix, { lower: true });
+        } else {
+            genSlug = false;
+        }
+    }
+
+    const hashPassword = await hash(password, 10)
+
+    const newUser = await prisma.user.create({
+        data: {
+            name,
+            email,
+            password: hashPassword,
+            slug: userSlug
+        }
+    })
+
+    if(!newUser) {
+        return new Error("Error creating user");
+    }
+
+    const token = createToken(userSlug);
+
+    return {
+        token,
+        user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email
+        },
+        message: "User created successfully"
+    }
 }

@@ -1,8 +1,9 @@
-import slug from "slug"
+import slugify from "slugify"
 import { prisma } from "../libs/prisma"
 import { CreateUserType } from "../types/UserType"
-import { hash } from "bcrypt-ts"
+import { hash } from "bcrypt"
 import { createToken } from "../utils/jwt-token"
+import { EmailAlreadyExistsError } from "./errors/email-already-exists.error"
 
 export const findUserByEmail = async (email: string) => {
     const user = await prisma.user.findUnique({
@@ -33,16 +34,16 @@ export const findUserBySlug = async (slug: string) => {
 export const createUser = async ({ name, email, password }: CreateUserType) => {
     const hasEmail = await findUserByEmail(email);
     if (hasEmail) {
-        return new Error("User already exists");
+        throw new EmailAlreadyExistsError();
     }
 
     let genSlug = true;
-    let userSlug = slug(name, { lower: true });
+    let userSlug = slugify(name, { lower: true });
     while (genSlug) {
         const hasSlug = await findUserBySlug(userSlug);
         if (hasSlug) {
             let randomSuffix = Math.floor(Math.random() * 1000);
-            userSlug = slug(name + randomSuffix, { lower: true });
+            userSlug = slugify(name + randomSuffix, { lower: true });
         } else {
             genSlug = false;
         }

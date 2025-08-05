@@ -1,9 +1,10 @@
 import slugify from "slugify"
 import { prisma } from "../libs/prisma"
 import { CreateUserType } from "../types/UserType"
-import { hash } from "bcrypt"
+import { hash, compare } from "bcrypt"
 import { createToken } from "../utils/jwt-token"
 import { EmailAlreadyExistsError } from "./errors/email-already-exists.error"
+import { InvalidCredentialsError } from "./errors/invalid-credentials.error"
 
 export const findUserByEmail = async (email: string) => {
     const user = await prisma.user.findUnique({
@@ -31,7 +32,7 @@ export const findUserBySlug = async (slug: string) => {
     return user;
 }
 
-export const createUser = async ({ name, email, password }: CreateUserType) => {
+export const createUserService = async ({ name, email, password }: CreateUserType) => {
     const hasEmail = await findUserByEmail(email);
     if (hasEmail) {
         throw new EmailAlreadyExistsError();
@@ -74,5 +75,29 @@ export const createUser = async ({ name, email, password }: CreateUserType) => {
             email: newUser.email
         },
         message: "User created successfully"
+    }
+}
+
+export const LoginUserService = async (email: string, password: string) => {
+    const user = await findUserByEmail(email);
+    if (!user) {
+        throw new InvalidCredentialsError();
+    }
+
+    const passwordMatch = await compare(password, user.password);
+
+    if (!passwordMatch) {
+        throw new InvalidCredentialsError();
+    }
+
+    const token = createToken(user.slug);
+
+    return {
+        token,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email
+        }
     }
 }
